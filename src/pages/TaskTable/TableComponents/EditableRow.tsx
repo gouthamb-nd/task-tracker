@@ -26,7 +26,7 @@ const EditableRow = ({editFormData, handleEditChange, handleCancel, handleSelect
         {editFormData.id}
     </StyledTableCell>
     <StyledTableCell sx={{ minWidth: "12.5rem" }}>
-        <input
+        <StyledInput
           type="text"
           required={true}
           name="taskName"
@@ -34,7 +34,7 @@ const EditableRow = ({editFormData, handleEditChange, handleCancel, handleSelect
           onChange={(e)=>handleEditChange(e)}
           data-testid={`taskName`}
           
-         ></input>
+         ></StyledInput>
       </StyledTableCell>
       <StyledTableCell sx={{ minWidth: "19rem" }}>
         <StyledInput
@@ -45,6 +45,7 @@ const EditableRow = ({editFormData, handleEditChange, handleCancel, handleSelect
           onChange={(e)=>handleEditChange(e)}
           sx={{ minWidth: "10rem" }}
         ></StyledInput>
+  
       </StyledTableCell>
       <StyledTableCell sx={{ minWidth: "12.5rem" }}>
         <Select

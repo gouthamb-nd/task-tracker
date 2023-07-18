@@ -63,6 +63,8 @@ describe('TaskTable', () => {
     })
 
     test("rows is being updated ", async()=>{
+
+      
       const {debug, container} = render(<TaskTable
         rows={rows} deleteTask={deleteTask}  handleCancel={handleCancel}
         editId={1} setEditId={setEditId} editFormData={editFormData} setEditFormData={setEditFormData} 

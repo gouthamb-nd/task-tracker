@@ -2,10 +2,10 @@ import { useState } from "react";
 import TaskForm from "./pages/TaskForm";
 import TaskTable from "./pages/TaskTable";
 import ResponsiveAppBar from "./components/ResponsiveAppBar/ResponsiveAppBar";
-import { Route, Routes, Link } from "react-router-dom";
+import { Route, Routes} from "react-router-dom";
 import "./App.css";
 import { gridObject } from "./types/CommonTypes";
-import Box from "@mui/material/Box/Box";
+import { Stack } from "@mui/material";
 
 
 type addType = {
@@ -81,7 +81,7 @@ function App() {
     <div className="App">
       <ResponsiveAppBar />
 
-      <Box display="flex" justifyContent="center" marginTop={5} height="80vh">
+      <Stack  justifyContent="center" direction="row" marginTop={5} height="80vh">
         <Routes>
           <Route
             path="/"
@@ -95,7 +95,7 @@ function App() {
           />
           <Route path="/add" element={<TaskForm addTask={addTask} />} />
         </Routes>
-      </Box>
+      </Stack>
 
     
     </div>

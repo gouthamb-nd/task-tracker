@@ -65,7 +65,7 @@ export default function TaskTable({rows, deleteTask, editId, setEditId, editForm
     <TableWrapper>
       <TableContainer component={Paper}>
       <form onSubmit={handleEditSubmit}>
-        <StyledTable sx={{ minWidth: 650 }} size="small">
+        <StyledTable size="small">
           <StyledTableHead color="#fff">
             <TableRow>
               <TableCell>ID</TableCell>
