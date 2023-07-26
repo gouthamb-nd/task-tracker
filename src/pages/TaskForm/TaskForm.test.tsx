@@ -2,13 +2,66 @@ import TaskForm from './TaskForm';
 import userEvent from '@testing-library/user-event'
 import { getByLabelText, render,screen, fireEvent,waitFor, FindByText } from '@testing-library/react';
 
-let mockFn = jest.fn();
+import { rest } from 'msw';
+import { setupServer } from 'msw/node';
+import {
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query'
+import { useDeleteTasks } from '../../hooks/useTaskData';
+
+
+const rows = [
+  {
+    id: 1,
+    taskName: "Task 1",
+    taskDescription: "Task Desc 1",
+    taskStatus: "pending",
+  },
+  {
+    id: 2,
+    taskName: "Task 2",
+    taskDescription: "Task Desc 2",
+    taskStatus: "pending",
+  },
+  {
+    id: 3,
+    taskName: "Task 3",
+    taskDescription: "Task Desc 3",
+    taskStatus: "pending",
+  }
+  ]
+
+  const server = setupServer(
+    rest.get('http://localhost:4000/tasks', (req, res, ctx) => {
+      return res(ctx.json(rows));
+    })
+,
+    rest.delete('http://localhost:4000/tasks/1', (req, res, ctx) => {
+      return res(ctx.json({message: "deleted successfully"}));
+    })
+
+  );
+  
+  beforeAll(() => server.listen());
+  afterEach(() => server.resetHandlers());
+  afterAll(() => server.close());
+
 
 
 describe('TaskForm', () => {
 
   test('All form elements are present', () => {
-    render(<TaskForm addTask={mockFn}/>);
+
+
+        const queryClient = new QueryClient();
+
+        render(
+        <QueryClientProvider client={queryClient}>
+            <TaskForm/>
+        </QueryClientProvider>
+        );
+  
     const taskName = screen.getByLabelText(/Task Name/i);
     const taskDescription = screen.getByLabelText(/Task Description/i)
     const taskButton = screen.getByRole("button")
@@ -18,7 +71,13 @@ describe('TaskForm', () => {
   });
 
   test("Error when textfields are empty", async()=> {
-    render(<TaskForm addTask={mockFn}/>)
+    const queryClient = new QueryClient();
+
+    render(
+        <QueryClientProvider client={queryClient}>
+            <TaskForm/>
+        </QueryClientProvider>
+        );
     const taskButton = screen.getByRole("button")
     fireEvent.click(taskButton)
     const nameError = await screen.findByText("Task name is required")
@@ -31,7 +90,13 @@ describe('TaskForm', () => {
 
   
 test("message displayed when submission is successful", async()=> {
-  render(<TaskForm addTask={mockFn}/>)
+    const queryClient = new QueryClient();
+
+    render(
+        <QueryClientProvider client={queryClient}>
+            <TaskForm/>
+        </QueryClientProvider>
+        );
   const taskName = screen.getByLabelText(/Task Name/i);
   const taskDescription = screen.getByLabelText(/Task Description/i)
   const taskButton = screen.getByRole("button")

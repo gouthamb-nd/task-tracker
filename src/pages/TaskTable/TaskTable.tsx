@@ -2,49 +2,53 @@ import {
   TableBody,
   Paper,
   TableContainer,
-  TableRow,
-  TableCell,
-  SelectChangeEvent
+  SelectChangeEvent,
+  CircularProgress
 } from "@mui/material";
-
-import RowComponent from "./TableComponents/RowComponent";
-import { gridObject } from "../../types/CommonTypes";
-import { StyledTable, StyledTableHead, TableWrapper } from "./TaskTable.styles";
+import {  useState } from "react";
+import ReadableRow from "./TableComponents/ReadableRow";
+import { gridObject} from "../../types/CommonTypes";
+import { StyledTable, TableWrapper } from "./TaskTable.styles";
 import EditableRow from "./TableComponents/EditableRow";
+import {useGetTasks, useDeleteTasks, useSubmitTasks} from '../../hooks/useTaskData'
+import TableHeader from "./TableComponents/TableHeader";
 
-type TableProps = {
-  rows: gridObject[],
-    deleteTask: (id?: number)=>void,
-    editId: number,
-    setEditId: (id:number) => void,
-    editFormData : gridObject,
-    setEditFormData: (taskData:gridObject)=>void,
-    handleEditSubmit: (e: React.FormEvent<HTMLFormElement>) => void
-    handleCancel: ()=>void
-};
 
-export default function TaskTable({rows, deleteTask, editId, setEditId, editFormData, setEditFormData, handleEditSubmit, handleCancel}: TableProps) {
+const TaskTable= ()=> {
 
- const handleDelete = (e: React.MouseEvent<HTMLButtonElement>,id?:number)=>{
-    e.preventDefault()
-    deleteTask(id);
-        
+  const {data, isLoading} = useGetTasks()
+  const { mutate: submitMutate } = useSubmitTasks()
+  const { mutate: deleteMutate } = useDeleteTasks()
+  const tempTask = data?.data
+  const [editId, setEditId] = useState<number>(-1)
+  const [editFormData, setEditFormData] =useState<gridObject>({id: -1, taskName: "", taskDescription: "", taskStatus: ""})
+  const [nameError, setNameError] = useState("")
+  const [descError, setDescError] = useState("")
+
+
+  const deleteTask = (id?: number)=> {
+    deleteMutate(id)
+  }
+
+  const handleCancel = ()=>{
+    setEditId(-1)
    }
 
-  const handleEditClick = (e : React.MouseEvent<HTMLElement>, row:gridObject)=>{
-    e.preventDefault();
+  const handleSelectRow = (e : React.MouseEvent<HTMLElement>, row:gridObject)=>{
+    e.preventDefault()
     setEditId(row.id);
+    
     const formValues = {
         id: row.id,
         taskName: row.taskName,
         taskDescription: row.taskDescription,
         taskStatus: row.taskStatus,
       };
-  
-    setEditFormData(formValues);
+      
+    setEditFormData(formValues);   
 }
 
-  const handleEditChange = (e :  React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e :  React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     e.preventDefault();
     const { name, value } = e.target
     const newFormData = {...editFormData, [name]: value}
@@ -59,32 +63,54 @@ export default function TaskTable({rows, deleteTask, editId, setEditId, editForm
 
 }
 
+const validate = ()=>{
+  if(editFormData.taskName === ""){
+      setNameError("Task Name is required")
+      return false
+    }
+    if(editFormData.taskDescription === ""){
+      setDescError("Task Description is required")
+      return false
+    }
+    return true
+}
 
+const submitChanges: React.FormEventHandler<HTMLFormElement> = (e)=>{
+  
+  e.preventDefault()
+ if(validate()){
+  const edited = {
+      id: editId,
+      taskName: editFormData.taskName,
+      taskDescription: editFormData.taskDescription,
+      taskStatus: editFormData.taskStatus
+      
+  }
+  console.log(edited)
+  submitMutate(edited)
+  setEditId(-1)
+ }
+}
+
+
+  if(isLoading){
+    return <CircularProgress data-testid="progressbar"/>
+  }
 
   return (
     <TableWrapper>
       <TableContainer component={Paper}>
-      <form onSubmit={handleEditSubmit}>
+      <form onSubmit={submitChanges}>
         <StyledTable size="small">
-          <StyledTableHead color="#fff">
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell sx={{ minWidth: "12.5rem" }}>TASK NAME</TableCell>
-              <TableCell sx={{ minWidth: "19rem" }}>TASK DESCRIPTION</TableCell>
-              <TableCell>TASK STATUS</TableCell>
-              <TableCell sx={{ minWidth: "9rem" }}>Edit</TableCell>
-              <TableCell sx={{ minWidth: "6rem" }}>Delete</TableCell>
-            </TableRow>
-          </StyledTableHead>
+          <TableHeader/>
           <TableBody>
-          {rows.map((row,index) => (
+          {tempTask?.map((task: gridObject,index: number) => (
                         
-                            editId === row.id? <EditableRow key={index} editFormData={editFormData} handleEditChange={handleEditChange} handleCancel={handleCancel} handleSelectChange={handleSelectChange}/>
-                            : <RowComponent key={index} row={row} handleEditClick={handleEditClick} deleteTask={deleteTask}/>
+            editId === task.id? <EditableRow key={index} editFormData={editFormData} handleInputChange={handleInputChange}  
+            handleSelectChange={handleSelectChange} handleCancel={handleCancel} nameError={nameError} descError={descError}/>
+            : <ReadableRow key={index} row={task} handleSelectRow={handleSelectRow} deleteTask={deleteTask}/>
                            
-                        
-                         
-                    ))}
+            ))}
           </TableBody>
         </StyledTable>
         </form>
@@ -92,3 +118,5 @@ export default function TaskTable({rows, deleteTask, editId, setEditId, editForm
     </TableWrapper>
   );
 }
+
+export default TaskTable

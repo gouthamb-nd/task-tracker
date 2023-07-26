@@ -1,7 +1,6 @@
 import { styled } from '@mui/system';
 import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import { Box, TableCell, TableRow } from '@mui/material';
+import { Box, TableCell, TableRow, TableHead } from '@mui/material';
 
 export const TableWrapper = styled(Box)`
 
@@ -38,14 +37,27 @@ export const StyledTableCell = styled(TableCell)`
 
 export const StyledInput = styled('input')`
     font-size: 1rem;
-    height: 1rem;
-    width: 6rem;
-    padding: ${({theme})=> theme.spacing(1.5)};
+    width: 100%;
+    height: 100%;
+    padding: ${({theme})=> theme.spacing(0)};
+    border: none;
+    border-bottom: 1px solid black;
+
+    &:focus{
+        
+        outline: none
+
+    }
 `
 
 export const StyledTableRow = styled(TableRow)`
     width: 40rem;
     height: 2rem;
     box-sizing: border-box;
+`
+
+export const ErrorBox = styled('p')`
+    font-size: 0.6rem;
+    color:red;
 `
 

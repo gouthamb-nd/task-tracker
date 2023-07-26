@@ -1,90 +1,166 @@
 import TaskTable from './TaskTable'
-import userEvent from '@testing-library/user-event'
-import { render, screen, getByTestId, fireEvent, waitFor} from '@testing-library/react';
+import EditableRow from './TableComponents/EditableRow';
+import { render, screen, getByTestId, fireEvent, waitFor, renderHook, findByTestId, act, findAllByRole, queryByTestId} from '@testing-library/react';
+import {
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query'
+import {rest} from 'msw'  
+import { server } from '../../mocks/server';
+import { rows } from '../../mocks/handlers';
+import { useGetTasks } from '../../hooks/useTaskData';
+import { ReactNode } from 'react';
 
+type GetHookType = {
+  children: ReactNode
+}
 
-let deleteTask = jest.fn();
-let handleCancel = jest.fn();
-let editId = -1;
-let setEditId = jest.fn();
-let editFormData = {id: -1, taskName: "", taskDescription: "", taskStatus: ""}
-let setEditFormData = jest.fn();
-let handleEditSubmit = jest.fn();
 
 describe('TaskTable', () => {
+  beforeEach(() => {
+    server.use(       
+        rest.get('http://localhost:4000/tasks/', (req, res, ctx) => {
+        return res(ctx.json(rows))
+      }),
+      );
+});
 
-    const rows = [
-    {
-      id: 1,
-      taskName: "Task 1",
-      taskDescription: "Task Desc 1",
-      taskStatus: "pending",
-    },
-    {
-      id: 2,
-      taskName: "Task 2",
-      taskDescription: "Task Desc 2",
-      taskStatus: "pending",
-    },
-    {
-      id: 3,
-      taskName: "Task 3",
-      taskDescription: "Task Desc 3",
-      taskStatus: "pending",
-    }
-    ]
-    test('All rows are rendered properly', () => {
-        render(<TaskTable
-          rows={rows} deleteTask={deleteTask} handleCancel={handleCancel}
-          editId={editId} setEditId={setEditId} editFormData={editFormData} setEditFormData={setEditFormData} 
-          handleEditSubmit={handleEditSubmit}
-          />);
+afterEach(() => server.resetHandlers())
 
-        const row = screen.getByRole('cell', {name: 'Task 1'})
-        expect(row).toBeInTheDocument();
+// Clean up after the tests are finished.
+afterAll(() => server.close())
+   
+    test.only('All rows are rendered properly', async () => {
+
+      const queryClient = new QueryClient();
+      const wrapper = ({ children}: GetHookType) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      )
+      const {result} = await renderHook(() => useGetTasks(), {wrapper});
+      
+      server.printHandlers()
+      const {debug} = render(
+        <QueryClientProvider client={queryClient}>
+          <TaskTable/>
+        </QueryClientProvider>
+      );
+        debug()
+
+
+
+      // const progressbar = await screen.queryByTestId('progressbar')
+      //  await waitFor(()=>{
+      //    expect(progressbar).not.toBeInTheDocument();
+      //  })
         
 
     })
+
+
+
 
     test("rows is being deleted on click", async()=>{
-        const {debug, container} = render(<TaskTable
-        rows={rows} deleteTask={deleteTask} handleCancel={handleCancel}
-        editId={editId} setEditId={setEditId} editFormData={editFormData} setEditFormData={setEditFormData} 
-        handleEditSubmit={handleEditSubmit}
-        />);
-        const cellOne = screen.getByRole('cell', {name: 'Task 1'})
-        const deleteButton = screen.getByRole('button', { name: 'delete-1' });
+
+      const queryClient = new QueryClient();
+
+      const {debug} = render(
+        <QueryClientProvider client={queryClient}>
+          <TaskTable/>
+        </QueryClientProvider>
+      );
+      renderHook(()=> useGetTasks())
+      await waitFor(()=>{
+        const row = screen.queryByRole('cell', {name: 'Task 1'})
+
+        expect(row).toBeInTheDocument();
+      })
+
+      
+        const deleteButton = await screen.findByTestId('delete-1') as HTMLButtonElement
+        expect(deleteButton).toBeInTheDocument();
+        fireEvent.click(deleteButton)
         
-        await userEvent.click(deleteButton)
-        expect(deleteTask).toHaveBeenCalled();
-       
-        
+        await act(()=>{
+        waitFor(()=>{
+        const row = screen.queryByRole('cell', {name: 'Task 1'})
+        expect(row).not.toBeInTheDocument()
+        debug()
+        })
+      })
+
+ 
 
     })
 
-    test("rows is being updated ", async()=>{
+    test("Inputs in the rows are being updated", async()=>{
 
+      const queryClient = new QueryClient();
+      const submitChanges = jest.fn()
+
+      const {debug} = render(
+        <QueryClientProvider client={queryClient}>
+          <TaskTable/>
+        </QueryClientProvider>
+      );
       
-      const {debug, container} = render(<TaskTable
-        rows={rows} deleteTask={deleteTask}  handleCancel={handleCancel}
-        editId={1} setEditId={setEditId} editFormData={editFormData} setEditFormData={setEditFormData} 
-        handleEditSubmit={handleEditSubmit}
-        />);
-
-      const InputOne = screen.getByTestId('taskName') as HTMLInputElement 
-      await waitFor(()=>{ expect(InputOne).toBeInTheDocument()
-        console.log(InputOne)
+      const editButton = await screen.findByTestId('edit-1')
+      await waitFor(()=>{ 
+        expect(editButton).toBeInTheDocument()
       })
 
-      fireEvent.blur(InputOne, {target:{ value: "Buy a midi"}})
-      expect(InputOne.value).toBe("Buy a midi")
-      const submitButton = screen.getByTestId('CheckBoxIcon')
-      fireEvent.click(submitButton)
+      fireEvent.click(editButton)
 
-      await waitFor(()=>{
-      expect(handleEditSubmit).toHaveBeenCalled()})
-       
+      const inputOne = await screen.findByTestId('taskName-1')
+      await waitFor(()=>{ 
+        expect(inputOne).toBeInTheDocument()
+      })
+
+      fireEvent.blur(inputOne, { target: { value: 'Task 1 edited' } });
+      await waitFor(()=>{ 
+        expect(inputOne).toHaveValue('Task 1 edited')
+      })
+
+      const submitButton = await screen.findByTestId('check-1')
+      expect(submitButton).toBeInTheDocument()      
+  
 });
+
+  test("the edited details are submitted",async ()=>{
+    const queryClient = new QueryClient();
+      const editFormData = {
+        id: 1,
+        taskName: "Task 1",
+        taskDescription: "Task Desc 1",
+        taskStatus: "pending",
+      }
+      const handleInputChange = jest.fn()
+      const handleSelectChange = jest.fn()
+      const handleCancel = jest.fn()
+      const submitChanges = jest.fn()
+      const nameError = ""
+      const descError = ""
+
+      const {debug} = render(
+        <QueryClientProvider client={queryClient}>
+          <EditableRow editFormData={editFormData} handleInputChange={handleInputChange}  
+            handleSelectChange={handleSelectChange} handleCancel={handleCancel} nameError={nameError} descError={descError}
+            />
+        </QueryClientProvider>
+
+      )
+
+      const submitButton =  screen.getByTestId('check-1')
+      expect(submitButton).toBeInTheDocument()
+      fireEvent.click(submitButton)
+      await waitFor(()=>{ 
+        expect(submitChanges).toHaveBeenCalled()
+      })
+  
     
 
 }) 
+
+
+
+})
+

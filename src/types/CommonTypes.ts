@@ -5,3 +5,5 @@ export type gridObject = {
     taskStatus: string;
     
   };
+
+export type gridRowType = gridObject[];
